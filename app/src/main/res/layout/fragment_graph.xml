@@ -1,29 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:ap="http://schemas.android.com/apk/res-auto"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-    <com.androidplot.xy.XYPlot
-        android:id="@+id/plot"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        ap:legendAnchor="left_top"
-        ap:legendHorizontalPositioning="absolute_from_left"
-        ap:legendHorizontalPosition="50dp"
-        ap:legendVerticalPositioning="absolute_from_top"
-        ap:legendVerticalPosition="25dp"
-        ap:legendHeightMode="absolute"
-        ap:legendHeight="60dp"
-        ap:legendTextSize="10dp"
-        ap:lineLabelTextSizeBottom="10dp"
-        ap:lineLabelTextSizeLeft="10dp"
-        ap:lineLabels="left|bottom"
-        ap:lineLabelRotationBottom="-45"
-        ap:gridInsetTop="10dp"
-        ap:gridInsetLeft="30dp"
-        ap:gridInsetBottom="35dp"
-        ap:gridInsetRight="15dp"
-        ap:lineLabelInsetLeft="10dp"
-        ap:lineLabelInsetBottom="15dp"/>
-        
+    <TextView
+            android:id="@+id/plot"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="Grafen är temporärt inaktiverad" />
+
 </RelativeLayout>

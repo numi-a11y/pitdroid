@@ -1,6 +1,7 @@
 package com.bonstead.pitdroid
 
 import com.bonstead.pitdroid.HeaterMeter.NamedSample
+import com.bonstead.pitdroid.BuildConfig // Tvingar Kotlin att hitta din genererade BuildConfig
 
 import android.annotation.TargetApi
 import android.app.AlarmManager
@@ -20,7 +21,6 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 
-
 class AlarmService : Service() {
 
     private var mServiceAlarm: PendingIntent? = null
@@ -32,7 +32,14 @@ class AlarmService : Service() {
 
         // Create a pending intent use to schedule us for wakeups
         val alarmIntent = Intent(this, AlarmService::class.java)
-        mServiceAlarm = PendingIntent.getService(this, 0, alarmIntent, 0)
+
+        // Android 12+ Fix: Added PendingIntent.FLAG_IMMUTABLE
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_IMMUTABLE
+        } else {
+            0
+        }
+        mServiceAlarm = PendingIntent.getService(this, 0, alarmIntent, flags)
 
         mStatusChannel = createNotificationChannel("pitdroidstatus", false)
         mAlarmChannel = createNotificationChannel("pitdroidalarm", true)
@@ -60,15 +67,17 @@ class AlarmService : Service() {
             // It's important that even if the user isn't actively using their device the
             // checks will run, so use the version that will force a wakeup on newer
             // versions of Android with Doze mode.
-            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextTime, mServiceAlarm)
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextTime, mServiceAlarm!!)
         } else {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, nextTime, mServiceAlarm)
+            alarmManager.set(AlarmManager.RTC_WAKEUP, nextTime, mServiceAlarm!!)
         }
     }
 
     private fun cancelAlarm() {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        alarmManager.cancel(mServiceAlarm)
+        if (mServiceAlarm != null) {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarmManager.cancel(mServiceAlarm!!)
+        }
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(kAlarmNotificationId)
@@ -157,7 +166,8 @@ class AlarmService : Service() {
     private fun createBuilder(icon: Int, intent: PendingIntent, channel: String): Notification.Builder {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val alarmBuilder = Notification.Builder(this, channel)
-            val statusIcon = Icon.createWithResource("", icon)
+            // Fix: Använder det riktiga paketnamnet istället för tom sträng
+            val statusIcon = Icon.createWithResource(this.packageName, icon)
             val statusAction = Notification.Action.Builder(statusIcon, "Close", intent).build()
             alarmBuilder.addAction(statusAction)
             alarmBuilder.setSmallIcon(icon)
@@ -175,9 +185,7 @@ class AlarmService : Service() {
             return alarmBuilder
         }
     }
-    /**
-     * Show a notification while this service is running.
-     */
+
     private fun updateStatusNotification(latestSample: NamedSample?) {
         if (BuildConfig.DEBUG) {
             Log.v(TAG, "Info notification")
@@ -186,7 +194,6 @@ class AlarmService : Service() {
         var contentText = ""
 
         if (latestSample != null) {
-            // If we've got a sample, check if any of the alarms are triggered
             for (p in 0 until HeaterMeter.kNumProbes) {
                 if (!latestSample.mProbes[p].isNaN()) {
                     if (contentText.isNotEmpty()) {
@@ -194,7 +201,6 @@ class AlarmService : Service() {
                     }
 
                     contentText += latestSample.mProbeNames[p] + ": "
-
                     contentText += HeaterMeter.formatTemperature(latestSample.mProbes[p])
                 }
             }
@@ -202,12 +208,15 @@ class AlarmService : Service() {
             contentText = getString(R.string.alarm_service_info)
         }
 
+        // Android 12+ Fix: Lade till PendingIntent.FLAG_IMMUTABLE
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+
         val mainIntent = Intent(this, MainActivity::class.java)
-        val statusIntent = PendingIntent.getActivity(this, 0, mainIntent, 0)
+        val statusIntent = PendingIntent.getActivity(this, 0, mainIntent, flags)
 
         val closeIntent = Intent(this, MainActivity::class.java)
         closeIntent.putExtra("close", true)
-        val closePendingIntent = PendingIntent.getActivity(this, 1, closeIntent, 0)
+        val closePendingIntent = PendingIntent.getActivity(this, 1, closeIntent, flags)
 
         val builder = createBuilder(R.mipmap.ic_status, closePendingIntent, mStatusChannel)
             .setContentTitle("PitDroid Monitor")
@@ -220,11 +229,9 @@ class AlarmService : Service() {
 
     private fun updateAlarmNotification(latestSample: NamedSample?) {
         var contentText = ""
-
         var hasAlarms = false
 
         if (latestSample != null) {
-            // If we've got a sample, check if any of the alarms are triggered
             for (p in 0 until HeaterMeter.kNumProbes) {
                 val alarmText = HeaterMeter.formatAlarm(p, latestSample.mProbes[p])
                 if (alarmText.isNotEmpty()) {
@@ -238,7 +245,6 @@ class AlarmService : Service() {
                 }
             }
         } else {
-            // If we didn't get a sample, that's an alarm in itself
             if (HeaterMeter.mAlarmOnLostConnection) {
                 hasAlarms = true
             }
@@ -250,14 +256,17 @@ class AlarmService : Service() {
                 Log.v(TAG, "Alarm notification:$contentText")
             }
 
+            // Android 12+ Fix: Lade till PendingIntent.FLAG_IMMUTABLE
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+
             val alarmIntent = Intent(this, MainActivity::class.java)
-            val alarmPendingIntent = PendingIntent.getActivity(this, 0, alarmIntent, 0)
+            val alarmPendingIntent = PendingIntent.getActivity(this, 0, alarmIntent, flags)
 
             val alarmBuilder = createBuilder(R.mipmap.ic_status, alarmPendingIntent, mAlarmChannel)
             alarmBuilder
-                    .setContentTitle("PitDroid Alarm")
-                    .setContentText(contentText)
-                    .setContentIntent(alarmPendingIntent)
+                .setContentTitle("PitDroid Alarm")
+                .setContentText(contentText)
+                .setContentIntent(alarmPendingIntent)
 
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val isSilentMode = am.ringerMode != AudioManager.RINGER_MODE_NORMAL
@@ -270,16 +279,8 @@ class AlarmService : Service() {
                 if (BuildConfig.DEBUG) {
                     Log.v(TAG, "Using alarm sound")
                 }
-
-                //val alert = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                //alarmBuilder.setSound(alert, AudioManager.STREAM_ALARM)
-            } else {
-                if (BuildConfig.DEBUG) {
-                    Log.v(TAG, "Not using alarm sound")
-                }
             }
 
-            // Build the notification and issues it with notification manager.
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(kAlarmNotificationId, alarmBuilder.build())
         }

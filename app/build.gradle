@@ -5,6 +5,10 @@ android {
     namespace "com.bonstead.pitdroid"
     compileSdk 34
 
+    buildFeatures {
+        buildConfig = true // <-- LÄGG TILL DENNA RAD HÄR
+    }
+
     defaultConfig {
         applicationId "com.bonstead.pitdroid"
         minSdk 26
