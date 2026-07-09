@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#121212"
+        android:padding="16dp">
+
+    <!-- GIGANTISK MÖRHETSMÄTARE (HUVUDFOKUS) -->
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1.5"
+            android:orientation="vertical"
+            android:gravity="center">
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MEAT TENDERNESS"
+                android:textColor="#888888"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+        <TextView
+                android:id="@+id/text_tenderness_percentage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0%"
+                android:textColor="#FF6D00"
+                android:textSize="64sp"
+                android:textStyle="bold" />
+
+        <TextView
+                android:id="@+id/text_cook_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="STATUS: NOT STARTING"
+                android:textColor="#00E676"
+                android:textSize="16sp" />
+    </LinearLayout>
+
+    <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#333333"
+            android:layout_marginVertical="16dp"/>
+
+    <!-- DE 4 TEMPERATURPROBERNA -->
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="2"
+            android:orientation="vertical">
+
+        <!-- PROBE 0: PIT/AMBIENT -->
+        <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:background="#1E1E1E"
+                android:layout_marginBottom="8dp">
+            <TextView
+                    android:id="@+id/label_probe0"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pit Temperature"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp" />
+            <TextView
+                    android:id="@+id/value_probe0"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:text="---°"
+                    android:textColor="#FF3D00"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+        </RelativeLayout>
+
+        <!-- PROBE 1: MEAT 1 -->
+        <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:background="#1E1E1E"
+                android:layout_marginBottom="8dp">
+            <TextView
+                    android:id="@+id/label_probe1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Meat Probe 1"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp" />
+            <TextView
+                    android:id="@+id/value_probe1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:text="---°"
+                    android:textColor="#00B0FF"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+        </RelativeLayout>
+
+        <!-- PROBE 2: MEAT 2 -->
+        <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:background="#1E1E1E"
+                android:layout_marginBottom="8dp">
+            <TextView
+                    android:id="@+id/label_probe2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Meat Probe 2"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp" />
+            <TextView
+                    android:id="@+id/value_probe2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:text="---°"
+                    android:textColor="#00E676"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+        </RelativeLayout>
+
+        <!-- PROBE 3: MEAT 3 -->
+        <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:background="#1E1E1E">
+            <TextView
+                    android:id="@+id/label_probe3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Meat Probe 3"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp" />
+            <TextView
+                    android:id="@+id/value_probe3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:text="---°"
+                    android:textColor="#AA00FF"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+        </RelativeLayout>
+    </LinearLayout>
+</LinearLayout>

@@ -43,4 +43,6 @@
     <string name="alarmOnLostConnectionSummary">Sound an alarm when a connection to the server can\'t be established.</string>
     <string name="keepScreenOnSummary">Keep the screen on while PitDroid is running.</string>
     <string name="keepScreenOnTitle">Keep screen on</string>
+    <string name="title_tenderness">Tenderness</string>
+    <string name="title_dashboard">Status</string>
 </resources>
