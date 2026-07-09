@@ -1,24 +1,28 @@
 package com.bonstead.pitdroid
 
-import java.lang.ref.WeakReference
-import android.os.Bundle
-import android.support.design.widget.BottomNavigationView
-import android.support.v7.app.AppCompatActivity
-import android.app.Fragment
+import android.Manifest
+import android.annotation.TargetApi
+import android.content.Intent
 import android.content.SharedPreferences
-import android.preference.PreferenceManager
-import kotlinx.android.synthetic.main.activity_main.*
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
+import android.view.WindowManager
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.preference.PreferenceManager
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import java.lang.ref.WeakReference
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import android.os.Handler
-import android.view.WindowManager
-import android.widget.Toast
-import android.os.Message
-import android.annotation.TargetApi
-import android.os.Build
-import android.content.Intent
-import android.app.AlertDialog
 
 class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
     private val mScheduler = Executors.newScheduledThreadPool(1)
@@ -31,30 +35,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         mHandler.sendMessage(mHandler.obtainMessage(0, data))
     }
 
-    private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
-        when (item.itemId) {
-            R.id.navigation_dash -> {
-                openFragment(DashFragment())
-                return@OnNavigationItemSelectedListener true
-            }
-            R.id.navigation_graph -> {
-                openFragment(GraphFragment())
-                return@OnNavigationItemSelectedListener true
-            }
-            R.id.navigation_gauge -> {
-                openFragment(GaugeFragment())
-                return@OnNavigationItemSelectedListener true
-            }
-            R.id.navigation_settings -> {
-                openFragment(SettingsFragment())
-                return@OnNavigationItemSelectedListener true
-            }
-        }
-        false
-    }
-
     private fun openFragment(fragment: Fragment) {
-        val transaction = fragmentManager.beginTransaction()
+        val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.fragment, fragment)
         transaction.addToBackStack(null)
         transaction.commit()
@@ -64,34 +46,59 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // If we don't have a fragment (being opened, not recreated), open the gauge fragment by default
-        if (fragmentManager.findFragmentById(android.R.id.content) == null) {
-            // Display the fragment as the main content.
+        // MODERNIZED: Ask for Android 13+ Notification Permissions right when the app opens
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    101
+                )
+            }
+        }
+
+        if (supportFragmentManager.findFragmentById(R.id.fragment) == null) {
             openFragment(GaugeFragment())
         }
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(baseContext)
-        prefs.registerOnSharedPreferenceChangeListener(this);
+        prefs.registerOnSharedPreferenceChangeListener(this)
 
         HeaterMeter.initPreferences(prefs)
-
-        // Uncomment to use saved sample data instead of live, for testing purposes
-        //mHeaterMeter.setHistory(new InputStreamReader(getResources().openRawResource(R.raw.sample_data)));
 
         updateScreenOn()
         updateAlarmService()
 
-        // Sent when the close button is pressed on the alarm service status message
         if (intent.hasExtra("close")) {
             showCloseMessage()
         }
 
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
+        val navView = findViewById<BottomNavigationView>(R.id.navigation)
+        navView.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.navigation_dash -> {
+                    openFragment(DashFragment())
+                    true
+                }
+                R.id.navigation_graph -> {
+                    openFragment(GraphFragment())
+                    true
+                }
+                R.id.navigation_gauge -> {
+                    openFragment(GaugeFragment())
+                    true
+                }
+                R.id.navigation_settings -> {
+                    openFragment(SettingsFragment())
+                    true
+                }
+                else -> false
+            }
+        }
     }
 
     override fun onPause() {
         super.onPause()
-
         if (mUpdateTimer != null) {
             mUpdateTimer!!.cancel(false)
             mUpdateTimer = null
@@ -100,7 +107,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
     override fun onPostResume() {
         super.onPostResume()
-
         if (mUpdateTimer == null) {
             mUpdateTimer = mScheduler.scheduleAtFixedRate(mUpdate, 0, HeaterMeter.kMinSampleTime, TimeUnit.MILLISECONDS)
         }
@@ -108,7 +114,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
     override fun onDestroy() {
         super.onDestroy()
-
         val prefs = PreferenceManager.getDefaultSharedPreferences(baseContext)
         prefs.unregisterOnSharedPreferenceChangeListener(this)
 
@@ -117,12 +122,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         }
     }
 
-    internal class IncomingHandler(activity: MainActivity) : Handler() {
-        private val mActivity: WeakReference<MainActivity>
-
-        init {
-            mActivity = WeakReference(activity)
-        }
+    // FIXED: Explicitly use the Main Looper to comply with modern Android strictness
+    internal class IncomingHandler(activity: MainActivity) : Handler(Looper.getMainLooper()) {
+        private val mActivity: WeakReference<MainActivity> = WeakReference(activity)
 
         override fun handleMessage(msg: Message) {
             val activity = mActivity.get()
@@ -143,10 +145,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         }
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
-        // If any preferences change, have the HeaterMeter re-read them all
-        HeaterMeter.initPreferences(sharedPreferences)
-        updateScreenOn()
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        sharedPreferences?.let {
+            HeaterMeter.initPreferences(it)
+            updateScreenOn()
+        }
     }
 
     private fun updateScreenOn() {
@@ -173,7 +176,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         } else {
             startService(Intent(this, AlarmService::class.java))
         }
-        startService(Intent(this, AlarmService::class.java))
     }
 
     private fun stopAlarmService() {
@@ -182,18 +184,14 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
     private fun showCloseMessage() {
         val builder = AlertDialog.Builder(this)
-
         builder.setTitle("Confirm")
         builder.setMessage("You have alarms set, are you sure you want to exit?")
-
-        builder.setPositiveButton("Yes") { dialog, which ->
+        builder.setPositiveButton("Yes") { dialog, _ ->
             mAllowServiceShutdown = true
             dialog.dismiss()
             finish()
         }
-
         builder.setNegativeButton("No", null)
-
         val alert = builder.create()
         alert.show()
     }

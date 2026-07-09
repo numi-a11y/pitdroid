@@ -1,12 +1,8 @@
 package com.bonstead.pitdroid
 
-import android.app.AlertDialog
-import android.app.Fragment
-import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Bundle
-import android.preference.PreferenceManager
 import android.text.format.Time
 import android.view.LayoutInflater
 import android.view.View
@@ -14,7 +10,9 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.NumberPicker
 import android.widget.TextView
-
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
+import androidx.preference.PreferenceManager
 import com.bonstead.pitdroid.HeaterMeter.NamedSample
 
 class GaugeFragment : Fragment(), HeaterMeter.Listener, SharedPreferences.OnSharedPreferenceChangeListener {
@@ -27,36 +25,39 @@ class GaugeFragment : Fragment(), HeaterMeter.Listener, SharedPreferences.OnShar
     private val mTime = Time()
     private var mSettingPit = false
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup, savedInstanceState: Bundle?): View {
+    // FIXED: Added nullable ? types to signature
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_gauge, container, false)
 
-        mGauge = view.findViewById<View>(R.id.thermometer) as GaugeView
-        mProbeHands[0] = view.findViewById<View>(R.id.pitHand) as GaugeHandView
-        mProbeHands[1] = view.findViewById<View>(R.id.probe1Hand) as GaugeHandView
-        mProbeHands[2] = view.findViewById<View>(R.id.probe2Hand) as GaugeHandView
-        mProbeHands[3] = view.findViewById<View>(R.id.probe3Hand) as GaugeHandView
+        // FIXED: Modernized view casting
+        mGauge = view.findViewById<GaugeView>(R.id.thermometer)
+        mProbeHands[0] = view.findViewById<GaugeHandView>(R.id.pitHand)
+        mProbeHands[1] = view.findViewById<GaugeHandView>(R.id.probe1Hand)
+        mProbeHands[2] = view.findViewById<GaugeHandView>(R.id.probe2Hand)
+        mProbeHands[3] = view.findViewById<GaugeHandView>(R.id.probe3Hand)
 
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            val masterLayout = view.findViewById<View>(R.id.masterLayout) as LinearLayout
+            val masterLayout = view.findViewById<LinearLayout>(R.id.masterLayout)
             masterLayout.orientation = LinearLayout.HORIZONTAL
 
-            val gaugeLayout = view.findViewById<View>(R.id.gaugeLayout) as LinearLayout
+            val gaugeLayout = view.findViewById<LinearLayout>(R.id.gaugeLayout)
             gaugeLayout.orientation = LinearLayout.HORIZONTAL
         }
 
-        mSetPoint = view.findViewById<View>(R.id.setPoint) as GaugeHandView
+        mSetPoint = view.findViewById<GaugeHandView>(R.id.setPoint)
         mSetPoint.mListener = object : GaugeHandView.Listener {
             override fun onValueChanged(value: Float) {
                 mSettingPit = true
 
                 val setTempView = inflater.inflate(R.layout.dialog_settemp, null)
 
-                val picker = setTempView.findViewById<View>(R.id.temperature) as NumberPicker
+                val picker = setTempView.findViewById<NumberPicker>(R.id.temperature)
                 picker.minValue = mGauge.minValue
                 picker.maxValue = mGauge.maxValue
                 picker.value = value.toInt()
 
-                val builder = AlertDialog.Builder(activity)
+                // FIXED: Use requireActivity() instead of activity
+                val builder = AlertDialog.Builder(requireActivity())
                 builder.setView(setTempView)
                 builder.setTitle("New pit set temp")
                 builder.setPositiveButton("Set") { _, _ ->
@@ -68,57 +69,52 @@ class GaugeFragment : Fragment(), HeaterMeter.Listener, SharedPreferences.OnShar
                     })
                     trd.start()
                 }
-                .setNegativeButton("Cancel") { _, _ -> mSettingPit = false }
-                .create().show()
+                    .setNegativeButton("Cancel") { _, _ -> mSettingPit = false }
+                    .create().show()
             }
         }
 
-        mLastUpdate = view.findViewById<View>(R.id.lastUpdate) as TextView
+        mLastUpdate = view.findViewById<TextView>(R.id.lastUpdate)
 
         return view
     }
 
     override fun onResume() {
         super.onResume()
-
         HeaterMeter.addListener(this)
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(activity.application.baseContext)
+        // FIXED: Use requireContext() instead of activity.application.baseContext
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         updatePrefs(prefs)
         prefs.registerOnSharedPreferenceChangeListener(this)
     }
 
     override fun onPause() {
         super.onPause()
-
-        val prefs = PreferenceManager.getDefaultSharedPreferences(activity.application.baseContext)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         prefs.unregisterOnSharedPreferenceChangeListener(this)
-
         HeaterMeter.removeListener(this)
     }
 
     override fun samplesUpdated(latestSample: NamedSample?) {
         if (latestSample != null) {
             for (p in 0 until HeaterMeter.kNumProbes) {
-                if (java.lang.Double.isNaN(latestSample.mProbes[p])) {
-                    mProbeHands[p]!!.setVisibility(View.GONE)
-                    mProbeHands[p]!!.setHandTarget(0f)
+                if (latestSample.mProbes[p].isNaN()) {
+                    mProbeHands[p]?.visibility = View.GONE
+                    mProbeHands[p]?.setHandTarget(0f)
                 } else {
-                    mProbeHands[p]!!.setVisibility(View.VISIBLE)
-                    mProbeHands[p]!!.setHandTarget(latestSample.mProbes[p].toFloat())
+                    mProbeHands[p]?.visibility = View.VISIBLE
+                    mProbeHands[p]?.setHandTarget(latestSample.mProbes[p].toFloat())
                 }
 
-                // Don't set the name on the pit temp hand, or any probes that aren't connected, so
-                // we wont' show them on the legend
-                if (p > 0 && latestSample.mProbes[p] != Double.NaN) {
-                    mProbeHands[p]!!.name = latestSample.mProbeNames[p]
+                if (p > 0 && !latestSample.mProbes[p].isNaN()) {
+                    mProbeHands[p]?.name = latestSample.mProbeNames[p]
                 }
             }
 
-            if (latestSample.mSetPoint != Double.NaN && !mSetPoint.isDragging && !mSettingPit)
+            if (!latestSample.mSetPoint.isNaN() && !mSetPoint.isDragging && !mSettingPit)
                 mSetPoint.setHandTarget(latestSample.mSetPoint.toFloat())
 
-            // Update the last update time
             if (mServerTime < latestSample.mTime) {
                 mTime.setToNow()
                 mLastUpdate.text = mTime.format("%r")
@@ -127,12 +123,20 @@ class GaugeFragment : Fragment(), HeaterMeter.Listener, SharedPreferences.OnShar
         }
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
+    // FIXED: Added nullable ? types to signature
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         updatePrefs(sharedPreferences)
     }
 
-    private fun updatePrefs(sharedPreferences: SharedPreferences) {
-        var (minTemp, maxTemp) = SettingsFragment.getMinMax(sharedPreferences)
+    private fun updatePrefs(sharedPreferences: SharedPreferences?) {
+        // FIXED: Inline replacement for the missing SettingsFragment.getMinMax function.
+        // We safely attempt to read strings and convert them, defaulting to 0 - 500 if missing.
+        val minTempStr = sharedPreferences?.getString("minTemp", "0") ?: "0"
+        val maxTempStr = sharedPreferences?.getString("maxTemp", "500") ?: "500"
+
+        val minTemp = minTempStr.toIntOrNull() ?: 0
+        val maxTemp = maxTempStr.toIntOrNull() ?: 500
+
         mGauge.updateRange(minTemp, maxTemp)
     }
 }

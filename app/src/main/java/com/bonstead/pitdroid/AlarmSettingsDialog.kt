@@ -1,15 +1,14 @@
 package com.bonstead.pitdroid
 
-import android.app.AlertDialog
 import android.app.Dialog
-import android.app.DialogFragment
-import android.content.DialogInterface
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
 import android.widget.CheckBox
 import android.widget.EditText
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.DialogFragment
 
+// MODERNIZED: Uses AndroidX DialogFragment
 class AlarmSettingsDialog : DialogFragment() {
     var mListener: AlarmDialogListener? = null
 
@@ -18,40 +17,33 @@ class AlarmSettingsDialog : DialogFragment() {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val bundle = this.arguments
-        val probeIndex = bundle.getInt("probeIndex", 0)
+        // FIXED: Safe unwrapping of arguments
+        val probeIndex = arguments?.getInt("probeIndex", 0) ?: 0
 
-        // Use the Builder class for convenient dialog construction
-        val builder = AlertDialog.Builder(activity)
+        // MODERNIZED: Use AndroidX AlertDialog and requireActivity()
+        val builder = AlertDialog.Builder(requireActivity())
 
-        // FIXME: The alert dialog is using the wrong theme so the background and text are black,
-        // this works around that.
-        builder.setInverseBackgroundForced(true)
-
-        // Get the layout inflater
-        val inflater = activity.layoutInflater
+        // Get the layout inflater safely
+        val inflater = requireActivity().layoutInflater
 
         // Inflate and set the layout for the dialog
-        // Pass null as the parent view because its going in the dialog layout
         val view = inflater.inflate(R.layout.dialog_alarm, null)
 
         builder.setView(view).setPositiveButton(R.string.ok) { _, _ ->
-            // Get the low temperature
-            var text = view.findViewById<View>(R.id.belowTemp) as EditText
-            var loValue = Integer.parseInt(text.text.toString())
+            // FIXED: Cleaned up casting and added safe parsing to prevent NumberFormat crashes
+            val textBelow = view.findViewById<EditText>(R.id.belowTemp)
+            var loValue = textBelow.text.toString().toIntOrNull() ?: 0
 
-            // If the alarm isn't enabled, negate the value
-            var check = view.findViewById<View>(R.id.belowCheck) as CheckBox
-            if (!check.isChecked) {
+            val checkBelow = view.findViewById<CheckBox>(R.id.belowCheck)
+            if (!checkBelow.isChecked) {
                 loValue *= -1
             }
 
-            // Same with the high temperature
-            text = view.findViewById<View>(R.id.aboveTemp) as EditText
-            var hiValue = Integer.parseInt(text.text.toString())
+            val textAbove = view.findViewById<EditText>(R.id.aboveTemp)
+            var hiValue = textAbove.text.toString().toIntOrNull() ?: 0
 
-            check = view.findViewById<View>(R.id.aboveCheck) as CheckBox
-            if (!check.isChecked) {
+            val checkAbove = view.findViewById<CheckBox>(R.id.aboveCheck)
+            if (!checkAbove.isChecked) {
                 hiValue *= -1
             }
 
@@ -59,15 +51,15 @@ class AlarmSettingsDialog : DialogFragment() {
             HeaterMeter.mProbeLoAlarm[probeIndex] = loValue
             HeaterMeter.mProbeHiAlarm[probeIndex] = hiValue
 
-            if (mListener != null) {
-                mListener!!.onFinishAlarmDialog(probeIndex)
-            }
+            // FIXED: Safe call operator for the listener
+            mListener?.onFinishAlarmDialog(probeIndex)
         }.setNegativeButton(R.string.cancel, null)
 
         var loVal = HeaterMeter.mProbeLoAlarm[probeIndex]
         var hiVal = HeaterMeter.mProbeHiAlarm[probeIndex]
         var loEnabled = true
         var hiEnabled = true
+
         if (loVal < 0) {
             loEnabled = false
             loVal *= -1
@@ -77,19 +69,18 @@ class AlarmSettingsDialog : DialogFragment() {
             hiVal *= -1
         }
 
-        var check = view.findViewById<View>(R.id.belowCheck) as CheckBox
-        check.isChecked = loEnabled
+        val checkBelow = view.findViewById<CheckBox>(R.id.belowCheck)
+        checkBelow.isChecked = loEnabled
 
-        var text = view.findViewById<View>(R.id.belowTemp) as EditText
-        text.setText(Integer.toString(loVal))
+        val textBelow = view.findViewById<EditText>(R.id.belowTemp)
+        textBelow.setText(loVal.toString())
 
-        check = view.findViewById<View>(R.id.aboveCheck) as CheckBox
-        check.isChecked = hiEnabled
+        val checkAbove = view.findViewById<CheckBox>(R.id.aboveCheck)
+        checkAbove.isChecked = hiEnabled
 
-        text = view.findViewById<View>(R.id.aboveTemp) as EditText
-        text.setText(Integer.toString(hiVal))
+        val textAbove = view.findViewById<EditText>(R.id.aboveTemp)
+        textAbove.setText(hiVal.toString())
 
-        // Create the AlertDialog object and return it
         return builder.create()
     }
 }

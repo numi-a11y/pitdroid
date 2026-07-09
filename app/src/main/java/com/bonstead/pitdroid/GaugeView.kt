@@ -1,7 +1,6 @@
 package com.bonstead.pitdroid
 
 import android.content.Context
-import android.content.res.TypedArray
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -17,30 +16,29 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-
 import java.util.ArrayList
 
 // Based on http://mindtherobot.com/blog/272/android-custom-ui-making-a-vintage-thermometer/
 class GaugeView : GaugeBaseView {
 
-    // drawing tools
+    // FIXED: Upgraded all drawing tools to lateinit var to satisfy modern Kotlin null-safety
     private var mGaugeRect: RectF = RectF()
-    private var mBezelPaint: Paint? = null
-    private var mBackgroundPaint: Paint? = null
-    private var mRimPaint: Paint? = null
+    private lateinit var mBezelPaint: Paint
+    private lateinit var mBackgroundPaint: Paint
+    private lateinit var mRimPaint: Paint
 
     private var mFaceRect: RectF = RectF()
-    private var mRimShadowPaint: Paint? = null
+    private lateinit var mRimShadowPaint: Paint
 
-    private var mScalePaint: Paint? = null
-    private var mScaleTextPaint: Paint? = null
+    private lateinit var mScalePaint: Paint
+    private lateinit var mScaleTextPaint: Paint
     private var mScaleRect: RectF = RectF()
 
-    private var mLegendPath: Path? = null
-    private var mLegendTextPaint: Paint? = null
+    private lateinit var mLegendPath: Path
+    private lateinit var mLegendTextPaint: Paint
     private var mLegendDirty = false
 
-    private var mCachedBackgroundPaint: Paint? = null
+    private lateinit var mCachedBackgroundPaint: Paint
     // end drawing tools
 
     private var mCachedBackground: Bitmap? = null // holds the cached static part
@@ -73,7 +71,6 @@ class GaugeView : GaugeBaseView {
     }
 
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs) {
-
         val a = context.obtainStyledAttributes(attrs, R.styleable.GaugeView)
         mScaleColor = a.getColor(R.styleable.GaugeView_scaleColor, mScaleColor)
         minValue = a.getInteger(R.styleable.GaugeView_minValue, minValue)
@@ -125,105 +122,92 @@ class GaugeView : GaugeBaseView {
         val scale = width.toFloat()
         val relativeScale = scale / 100f
 
-        // The rim has a thickness, so decrease the draw rect by that to ensure it doesn't get clipped
         val rimThickness = mScaleThickness * relativeScale * 0.5f
 
         mGaugeRect = RectF(rimThickness, rimThickness, scale - rimThickness, scale - rimThickness)
 
-        // the linear gradient is a bit skewed for realism
         mBezelPaint = Paint()
-        mBezelPaint!!.isAntiAlias = true
+        mBezelPaint.isAntiAlias = true
         if (!isInEditMode) {
-            mBezelPaint!!.shader = LinearGradient(0.40f * scale, 0.0f * scale, 0.60f * scale, 1.0f * scale,
-                    mBezelColor1,
-                    mBezelColor2,
-                    Shader.TileMode.CLAMP)
+            mBezelPaint.shader = LinearGradient(0.40f * scale, 0.0f * scale, 0.60f * scale, 1.0f * scale,
+                mBezelColor1, mBezelColor2, Shader.TileMode.CLAMP)
         } else {
-            mBezelPaint!!.style = Paint.Style.FILL
-            mBezelPaint!!.color = mBezelColor1
+            mBezelPaint.style = Paint.Style.FILL
+            mBezelPaint.color = mBezelColor1
         }
 
         mBackgroundPaint = Paint()
-        mBackgroundPaint!!.isAntiAlias = true
+        mBackgroundPaint.isAntiAlias = true
         if (!isInEditMode) {
-            mBackgroundPaint!!.shader = LinearGradient(0.40f * scale, 0.0f * scale, 0.60f * scale, 1.0f * scale,
-                    mBackgroundColor1,
-                    mBackgroundColor2,
-                    Shader.TileMode.CLAMP)
+            mBackgroundPaint.shader = LinearGradient(0.40f * scale, 0.0f * scale, 0.60f * scale, 1.0f * scale,
+                mBackgroundColor1, mBackgroundColor2, Shader.TileMode.CLAMP)
         } else {
-            mBackgroundPaint!!.style = Paint.Style.FILL
-            mBackgroundPaint!!.color = mBackgroundColor1
+            mBackgroundPaint.style = Paint.Style.FILL
+            mBackgroundPaint.color = mBackgroundColor1
         }
 
         mRimPaint = Paint()
-        mRimPaint!!.isAntiAlias = true
-        mRimPaint!!.style = Paint.Style.STROKE
-        mRimPaint!!.color = Color.argb(0x4f, 0x33, 0x36, 0x33)
-        mRimPaint!!.strokeWidth = mScaleThickness * relativeScale
+        mRimPaint.isAntiAlias = true
+        mRimPaint.style = Paint.Style.STROKE
+        mRimPaint.color = Color.argb(0x4f, 0x33, 0x36, 0x33)
+        mRimPaint.strokeWidth = mScaleThickness * relativeScale
 
         val rimSize = mRimSize * relativeScale
         mFaceRect.set(mGaugeRect.left + rimSize, mGaugeRect.top + rimSize,
-                mGaugeRect.right - rimSize, mGaugeRect.bottom - rimSize)
+            mGaugeRect.right - rimSize, mGaugeRect.bottom - rimSize)
 
         mRimShadowPaint = Paint()
-        mRimShadowPaint!!.shader = RadialGradient(
-                0.5f * scale, 0.5f * scale, mFaceRect.width() / 2.0f,
-                intArrayOf(0x00000000, 0x00000500, 0x50000500),
-                floatArrayOf(0.96f, 0.96f, 0.99f),
-                Shader.TileMode.MIRROR)
-        mRimShadowPaint!!.style = Paint.Style.FILL
+        mRimShadowPaint.shader = RadialGradient(
+            0.5f * scale, 0.5f * scale, mFaceRect.width() / 2.0f,
+            intArrayOf(0x00000000, 0x00000500, 0x50000500),
+            floatArrayOf(0.96f, 0.96f, 0.99f), Shader.TileMode.MIRROR)
+        mRimShadowPaint.style = Paint.Style.FILL
 
         mScalePaint = Paint()
-        mScalePaint!!.style = Paint.Style.STROKE
-        mScalePaint!!.color = mScaleColor
-        mScalePaint!!.strokeWidth = mScaleThickness * relativeScale
-        mScalePaint!!.isAntiAlias = true
+        mScalePaint.style = Paint.Style.STROKE
+        mScalePaint.color = mScaleColor
+        mScalePaint.strokeWidth = mScaleThickness * relativeScale
+        mScalePaint.isAntiAlias = true
 
         mScaleTextPaint = Paint()
-        mScaleTextPaint!!.isAntiAlias = true
-        mScaleTextPaint!!.textSize = mScaleFontSize * relativeScale
-        mScaleTextPaint!!.typeface = Typeface.SANS_SERIF
-        mScaleTextPaint!!.textScaleX = 0.8f
-        mScaleTextPaint!!.textAlign = Paint.Align.CENTER
+        mScaleTextPaint.isAntiAlias = true
+        mScaleTextPaint.textSize = mScaleFontSize * relativeScale
+        mScaleTextPaint.typeface = Typeface.SANS_SERIF
+        mScaleTextPaint.textScaleX = 0.8f
+        mScaleTextPaint.textAlign = Paint.Align.CENTER
 
         val scalePosition = mScaleOffset * relativeScale
         mScaleRect = RectF(mFaceRect.left + scalePosition, mFaceRect.top + scalePosition,
-                mFaceRect.right - scalePosition, mFaceRect.bottom - scalePosition)
+            mFaceRect.right - scalePosition, mFaceRect.bottom - scalePosition)
 
         val legendPosition = mLegendOffset * relativeScale
         val legendRect = RectF(mFaceRect.left + legendPosition, mFaceRect.top + legendPosition,
-                mFaceRect.right - legendPosition, mFaceRect.bottom - legendPosition)
+            mFaceRect.right - legendPosition, mFaceRect.bottom - legendPosition)
         mLegendPath = Path()
-        mLegendPath!!.addArc(legendRect, -180.0f, -180.0f)
+        mLegendPath.addArc(legendRect, -180.0f, -180.0f)
 
         mLegendTextPaint = Paint()
-        mLegendTextPaint!!.isAntiAlias = true
-        mLegendTextPaint!!.textSize = mScaleFontSize * relativeScale
-        mLegendTextPaint!!.typeface = Typeface.SANS_SERIF
-        mLegendTextPaint!!.textScaleX = 0.8f
+        mLegendTextPaint.isAntiAlias = true
+        mLegendTextPaint.textSize = mScaleFontSize * relativeScale
+        mLegendTextPaint.typeface = Typeface.SANS_SERIF
+        mLegendTextPaint.textScaleX = 0.8f
 
         mCachedBackgroundPaint = Paint()
-        mCachedBackgroundPaint!!.isFilterBitmap = true
+        mCachedBackgroundPaint.isFilterBitmap = true
 
         regenerateBackground()
     }
 
     private fun drawScale(canvas: Canvas) {
         val scale = width.toFloat()
-
         val openDegrees = mOpenTicks / mTotalTicks.toFloat() * 360.0f
 
         canvas.drawArc(mScaleRect, 90.0f + openDegrees * 0.5f, 360.0f - openDegrees, false, mScalePaint)
-
         canvas.save()
-
-        // We want to start drawing from the bottom center, so first flip the canvas around so
-        // that's on top.
         canvas.rotate(180f + openDegrees * 0.5f, 0.5f * scale, 0.5f * scale)
 
         val tickAngleIncrement = 360f / mTotalTicks
         val subTickAngleIncrement = tickAngleIncrement / (mSubTicks + 1)
-
         val numSteps = mTotalTicks - mOpenTicks + 1
 
         for (i in 0 until numSteps) {
@@ -233,21 +217,18 @@ class GaugeView : GaugeBaseView {
             canvas.drawLine(0.5f * scale, y1, 0.5f * scale, y2, mScalePaint)
 
             val curValue = minValue + i * mTickValue
-            val valueString = Integer.toString(curValue)
+            val valueString = curValue.toString()
             canvas.drawText(valueString, 0.5f * scale, y2 - 0.015f * scale, mScaleTextPaint)
 
             if (i < numSteps - 1) {
                 for (j in 0 until mSubTicks) {
                     y2 = y1 - 0.010f * scale
-
                     canvas.rotate(subTickAngleIncrement, 0.5f * scale, 0.5f * scale)
                     canvas.drawLine(0.5f * scale, y1, 0.5f * scale, y2, mScalePaint)
                 }
-
                 canvas.rotate(subTickAngleIncrement, 0.5f * scale, 0.5f * scale)
             }
         }
-
         canvas.restore()
     }
 
@@ -262,24 +243,22 @@ class GaugeView : GaugeBaseView {
             }
         }
 
-        val space = mLegendTextPaint!!.measureText("  ")
-
+        val space = mLegendTextPaint.measureText("  ")
         val lengths = FloatArray(mHands.size)
         var totalLength = 0f
         var firstText = true
 
         for (i in mHands.indices) {
             val hand = mHands[i]
+            val handName = hand.name // FIXED: Safe local reference
 
-            if (hand.name != null) {
+            if (handName != null) {
                 if (firstText) {
                     firstText = false
                 } else {
                     totalLength += space
                 }
-
-                lengths[i] = mLegendTextPaint!!.measureText(hand.name)
-
+                lengths[i] = mLegendTextPaint.measureText(handName)
                 totalLength += lengths[i]
             } else {
                 lengths[i] = 0f
@@ -291,10 +270,11 @@ class GaugeView : GaugeBaseView {
 
         for (i in mHands.indices) {
             val hand = mHands[i]
+            val handName = hand.name // FIXED: Safe local reference
 
-            if (hand.name != null) {
-                mLegendTextPaint!!.color = hand.color
-                canvas.drawTextOnPath(hand.name, mLegendPath, currentOffset, 0f, mLegendTextPaint)
+            if (handName != null) {
+                mLegendTextPaint.color = hand.color
+                canvas.drawTextOnPath(handName, mLegendPath, currentOffset, 0f, mLegendTextPaint)
                 currentOffset += lengths[i] + space
             }
         }
@@ -306,37 +286,33 @@ class GaugeView : GaugeBaseView {
             regenerateBackground()
         }
 
-        if (mCachedBackground == null) {
+        // FIXED: Safe local reference to the bitmap to satisfy the smart cast
+        val bg = mCachedBackground
+        if (bg == null) {
             Log.w(TAG, "Background not created")
         } else {
-            canvas.drawBitmap(mCachedBackground, 0f, 0f, mCachedBackgroundPaint)
+            canvas.drawBitmap(bg, 0f, 0f, mCachedBackgroundPaint)
         }
     }
 
     private fun regenerateBackground() {
-        // free the old bitmap
-        if (mCachedBackground != null) {
-            mCachedBackground!!.recycle()
-        }
+        mCachedBackground?.recycle()
 
-        mCachedBackground = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val backgroundCanvas = Canvas(mCachedBackground)
+        // FIXED: Create a local non-null bitmap before passing it to the canvas
+        val newBg = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        mCachedBackground = newBg
 
-        // first, draw the bezel
+        val backgroundCanvas = Canvas(newBg)
+
         backgroundCanvas.drawOval(mGaugeRect, mBezelPaint)
-        // now the outer rim circle
         backgroundCanvas.drawOval(mGaugeRect, mRimPaint)
-        // draw the gauge background
         backgroundCanvas.drawOval(mFaceRect, mBackgroundPaint)
-        // draw the inner rim circle
         backgroundCanvas.drawOval(mFaceRect, mRimPaint)
 
-        // draw the rim shadow inside the face
         if (!isInEditMode)
             backgroundCanvas.drawOval(mFaceRect, mRimShadowPaint)
 
         drawScale(backgroundCanvas)
-
         drawLegend(backgroundCanvas)
     }
 
@@ -344,11 +320,8 @@ class GaugeView : GaugeBaseView {
         return Math.max(minValue.toFloat(), Math.min(maxValue.toFloat(), value))
     }
 
-    // Converts a gauge value to a 0-360 degree angle value
-    // 0 = gauge absolute min value (including open ticks), 360 = gauge absolute max value
     fun valueToAngle(value: Float): Float {
         val clampedVal = clampValue(value)
-
         val actualMin = minValue - mOpenTicks.toFloat() * mTickValue.toFloat() * 0.5f
         val actualMax = maxValue + mOpenTicks.toFloat() * mTickValue.toFloat() * 0.5f
         val scalar = (clampedVal - actualMin) / (actualMax - actualMin)

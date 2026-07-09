@@ -1,14 +1,13 @@
 package com.bonstead.pitdroid
 
-import android.app.Fragment
+import androidx.fragment.app.Fragment
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Bundle
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import android.text.format.Time
 import android.view.LayoutInflater
 import android.view.View
-import android.view.View.OnClickListener
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
@@ -27,28 +26,29 @@ class DashFragment : Fragment(), HeaterMeter.Listener, AlarmDialogListener {
     private var mServerTime = 0
     private val mTime = Time()
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup, savedInstanceState: Bundle?): View {
+    // FIXED: Added nullable ? types to signature to match modern Fragment API
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_dash, container, false)
 
-        mFanSpeed = view.findViewById<View>(R.id.fanSpeedVal) as TextView
+        // FIXED: Cleaned up the casting syntax
+        mFanSpeed = view.findViewById<TextView>(R.id.fanSpeedVal)
 
-        mProbeNames[0] = view.findViewById<View>(R.id.probe0Name) as TextView
-        mProbeNames[1] = view.findViewById<View>(R.id.probe1Name) as TextView
-        mProbeNames[2] = view.findViewById<View>(R.id.probe2Name) as TextView
-        mProbeNames[3] = view.findViewById<View>(R.id.probe3Name) as TextView
+        mProbeNames[0] = view.findViewById<TextView>(R.id.probe0Name)
+        mProbeNames[1] = view.findViewById<TextView>(R.id.probe1Name)
+        mProbeNames[2] = view.findViewById<TextView>(R.id.probe2Name)
+        mProbeNames[3] = view.findViewById<TextView>(R.id.probe3Name)
 
-        mProbeVals[0] = view.findViewById<View>(R.id.probe0Val) as TextView
-        mProbeVals[1] = view.findViewById<View>(R.id.probe1Val) as TextView
-        mProbeVals[2] = view.findViewById<View>(R.id.probe2Val) as TextView
-        mProbeVals[3] = view.findViewById<View>(R.id.probe3Val) as TextView
+        mProbeVals[0] = view.findViewById<TextView>(R.id.probe0Val)
+        mProbeVals[1] = view.findViewById<TextView>(R.id.probe1Val)
+        mProbeVals[2] = view.findViewById<TextView>(R.id.probe2Val)
+        mProbeVals[3] = view.findViewById<TextView>(R.id.probe3Val)
 
-        mProbeTimes[1] = view.findViewById<View>(R.id.probe1Time) as TextView
-        mProbeTimes[2] = view.findViewById<View>(R.id.probe2Time) as TextView
-        mProbeTimes[3] = view.findViewById<View>(R.id.probe3Time) as TextView
+        mProbeTimes[1] = view.findViewById<TextView>(R.id.probe1Time)
+        mProbeTimes[2] = view.findViewById<TextView>(R.id.probe2Time)
+        mProbeTimes[3] = view.findViewById<TextView>(R.id.probe3Time)
 
-        mPitDelta = view.findViewById<View>(R.id.probe0Delta) as TextView
-
-        mLastUpdate = view.findViewById<View>(R.id.lastUpdate) as TextView
+        mPitDelta = view.findViewById<TextView>(R.id.probe0Delta)
+        mLastUpdate = view.findViewById<TextView>(R.id.lastUpdate)
 
         val probeIds = intArrayOf(R.id.probe0Alarm, R.id.probe1Alarm, R.id.probe2Alarm, R.id.probe3Alarm)
         for (p in 0 until HeaterMeter.kNumProbes) {
@@ -57,14 +57,13 @@ class DashFragment : Fragment(), HeaterMeter.Listener, AlarmDialogListener {
         }
 
         setDefaults()
-
         HeaterMeter.addListener(this)
 
         return view
     }
 
     private fun setAlarmClickListener(view: View, id: Int, index: Int) {
-        val button = view.findViewById<View>(id) as ImageButton
+        val button = view.findViewById<ImageButton>(id)
         button.setOnClickListener {
             val dialog = AlarmSettingsDialog()
 
@@ -74,7 +73,8 @@ class DashFragment : Fragment(), HeaterMeter.Listener, AlarmDialogListener {
 
             dialog.mListener = this@DashFragment
 
-            dialog.show(fragmentManager, "AlarmDialog")
+            // FIXED: Use modern AndroidX parentFragmentManager
+            dialog.show(parentFragmentManager, "AlarmDialog")
         }
     }
 
@@ -88,22 +88,21 @@ class DashFragment : Fragment(), HeaterMeter.Listener, AlarmDialogListener {
             3 -> id = R.id.probe3Alarm
         }
 
-        updateAlarmButtonImage(view, id, probeIndex)
+        // FIXED: Safely unwrapped the nullable fragment view
+        view?.let {
+            updateAlarmButtonImage(it, id, probeIndex)
+        }
 
-        // Since we may have changed alarm settings, tell the HeaterMeter to write them
-        // out
-        val prefs = PreferenceManager.getDefaultSharedPreferences(activity
-                .baseContext)
+        // FIXED: Use requireContext() and requireActivity() to satisfy null safety
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         HeaterMeter.preferencesChanged(prefs)
 
-        // Update the alarm service, so it gets stopped if there are no alarms any more,
-        // or started if there are now.
-        val mainActivity = activity as MainActivity
+        val mainActivity = requireActivity() as MainActivity
         mainActivity.updateAlarmService()
     }
 
     private fun updateAlarmButtonImage(view: View, id: Int, index: Int) {
-        val button = view.findViewById<View>(id) as ImageButton
+        val button = view.findViewById<ImageButton>(id)
 
         if (HeaterMeter.mProbeLoAlarm[index] > 0 || HeaterMeter.mProbeHiAlarm[index] > 0) {
             button.setImageResource(R.mipmap.ic_alarm_set)
@@ -116,18 +115,15 @@ class DashFragment : Fragment(), HeaterMeter.Listener, AlarmDialogListener {
         mFanSpeed.text = "-"
 
         for (p in 0 until HeaterMeter.kNumProbes) {
-            mProbeNames[p]!!.setText("-")
-            mProbeVals[p]!!.setText("-")
-            if (mProbeTimes[p] != null) {
-                mProbeTimes[p]!!.setText("")
-            }
+            mProbeNames[p]?.text = "-"
+            mProbeVals[p]?.text = "-"
+            mProbeTimes[p]?.text = ""
         }
         mPitDelta.text = ""
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-
         HeaterMeter.removeListener(this)
     }
 
@@ -139,29 +135,29 @@ class DashFragment : Fragment(), HeaterMeter.Listener, AlarmDialogListener {
 
             for (p in 0 until HeaterMeter.kNumProbes) {
                 if (latestSample.mProbeNames[p] == null) {
-                    mProbeNames[p]!!.setText("-")
+                    mProbeNames[p]?.text = "-"
                 } else {
-                    mProbeNames[p]!!.setText(latestSample.mProbeNames[p] + ": ")
+                    mProbeNames[p]?.text = latestSample.mProbeNames[p] + ": "
                 }
 
                 if (latestSample.mProbes[p].isNaN()) {
-                    mProbeVals[p]!!.setText("-")
+                    mProbeVals[p]?.text = "-"
                 } else {
-                    mProbeVals[p]!!.setText(HeaterMeter.formatTemperature(latestSample.mProbes[p]))
+                    mProbeVals[p]?.text = HeaterMeter.formatTemperature(latestSample.mProbes[p])
                 }
 
                 if (HeaterMeter.formatAlarm(p, latestSample.mProbes[p]).isNotEmpty()) {
-                    mProbeVals[p]!!.setTextColor(Color.RED)
+                    mProbeVals[p]?.setTextColor(Color.RED)
                 } else {
-                    mProbeVals[p]!!.setTextColor(Color.BLACK)
+                    mProbeVals[p]?.setTextColor(Color.BLACK)
                 }
 
                 if (mProbeTimes[p] != null) {
                     val timeUntilAlarm = HeaterMeter.getTemperatureChangeText(p)
                     if (timeUntilAlarm != null) {
-                        mProbeTimes[p]!!.setText(timeUntilAlarm)
+                        mProbeTimes[p]?.text = timeUntilAlarm
                     } else {
-                        mProbeTimes[p]!!.setText("")
+                        mProbeTimes[p]?.text = ""
                     }
                 }
             }
@@ -177,7 +173,6 @@ class DashFragment : Fragment(), HeaterMeter.Listener, AlarmDialogListener {
                 }
             }
 
-            // Update the last update time
             if (mServerTime < latestSample.mTime) {
                 mTime.setToNow()
                 mLastUpdate.text = mTime.format("%r")
