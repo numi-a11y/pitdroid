@@ -39,6 +39,10 @@ object HeaterMeter {
     private const val kMaxUpdateDelta: Long = 5000
 
     // User settings
+    // Tenderness Tracking State
+    internal var mAccumulatedTenderness: Double = 0.0
+    internal var mIsHolding: Boolean = false
+    internal var mLastTendernessUpdate: Long = 0L
     private val mServerAddress = arrayOfNulls<String>(2)
     private var mCurrentServer = 0
     private var mAdminPassword: String? = null
@@ -263,6 +267,12 @@ object HeaterMeter {
             val hiName = "alarm" + p + "Hi"
             mProbeHiAlarm[p] = prefs.getInt(hiName, -200)
         }
+
+        // Load Tenderness State (Preferences doesn't natively support Doubles, so we save it as a string)
+        val tendernessString = prefs.getString("accumulatedTenderness", "0.0")
+        mAccumulatedTenderness = tendernessString?.toDoubleOrNull() ?: 0.0
+        mIsHolding = prefs.getBoolean("isHolding", false)
+        mLastTendernessUpdate = prefs.getLong("lastTendernessUpdate", 0L)
     }
 
     internal fun preferencesChanged(prefs: SharedPreferences) {
@@ -275,6 +285,10 @@ object HeaterMeter {
             val hiName = "alarm" + p + "Hi"
             editor.putInt(hiName, mProbeHiAlarm[p])
         }
+        // Save Tenderness State
+        editor.putString("accumulatedTenderness", mAccumulatedTenderness.toString())
+        editor.putBoolean("isHolding", mIsHolding)
+        editor.putLong("lastTendernessUpdate", mLastTendernessUpdate)
 
         editor.apply()
     }
@@ -412,6 +426,27 @@ object HeaterMeter {
 
             mSamples.add(simpleSample)
         }
+// --- Tenderness Calculation Engine ---
+        val currentTimeMillis = System.currentTimeMillis()
+        val meatProbeIndex = 1 // Assuming Probe 1 is the primary meat probe. Change this if needed.
+        val currentMeatTemp = sample.mProbes[meatProbeIndex]
+
+        // Only calculate if we have a valid temperature and a previous timestamp
+        if (!currentMeatTemp.isNaN() && mLastTendernessUpdate > 0) {
+            val timePassedMillis = currentTimeMillis - mLastTendernessUpdate
+
+            // To prevent massive jumps from network drops, we cap the time jump at 30 minutes
+            if (timePassedMillis < (30 * 60 * 1000)) {
+                val addedPercentage = TendernessCalculator.calculateAddedPercentage(currentMeatTemp, timePassedMillis)
+                mAccumulatedTenderness += addedPercentage
+
+                // Prevent it from going over 100%
+                if (mAccumulatedTenderness > 100.0) mAccumulatedTenderness = 100.0
+            }
+        }
+
+        // Update the timestamp for the next run
+        mLastTendernessUpdate = currentTimeMillis
 
         return sample
     }

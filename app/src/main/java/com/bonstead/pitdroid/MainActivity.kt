@@ -76,6 +76,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         val navView = findViewById<BottomNavigationView>(R.id.navigation)
         navView.setOnItemSelectedListener { item ->
             when (item.itemId) {
+                R.id.navigation_big_dash -> {
+                    openFragment(BigDashFragment())
+                    true
+                }
                 R.id.navigation_dash -> {
                     openFragment(DashFragment())
                     true
