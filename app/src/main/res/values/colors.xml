@@ -1,18 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#000000</color>
-    <color name="colorPrimaryDark">#000000</color>
-    <color name="colorAccent">#D81B60</color>
-    <color name="probe0">#ee7733</color>
-    <color name="probe1">#66cc33</color>
-    <color name="probe2">#229977</color>
-    <color name="probe3">#778899</color>
-    <color name="fanSpeed">#66ccff</color>
-    <color name="lidOpen">#ffdd99</color>
-    <color name="setPoint">#ff0000</color>
-    <color name="graphBackground">#224466</color>
-    <color name="scaleColor">#0f0f0f</color>
-    <color name="gaugeBackground1">#f4f4f4</color>
-    <color name="gaugeBackground2">#bababa</color>
-    <color name="setTemp">#cc0000</color>
+    <!-- Backgrounds -->
+    <color name="charcoal_bg">#1A1A1D</color>
+    <color name="charcoal_surface">#222225</color>
+
+    <!-- Core Theme Colors -->
+    <color name="colorPrimary">#FF9800</color> <!-- Neon Orange for branding -->
+    <color name="colorPrimaryDark">#E65100</color>
+    <color name="colorAccent">#00E676</color> <!-- Neon Green for actions -->
+
+    <!-- Neon Text & Graph Colors -->
+    <color name="neon_orange">#FF9800</color>
+    <color name="neon_red">#FF5252</color>
+    <color name="neon_blue">#00BFFF</color>
+    <color name="neon_purple">#E040FB</color>
+    <color name="neon_green">#00E676</color>
+    <color name="neon_pink_target">#E91E63</color>
+
+    <!-- General Text Colors -->
+    <color name="text_light">#E0E0E0</color>
+    <color name="text_muted">#8E8E93</color>
+    <color name="grid_lines">#333333</color>
+    <!-- Legacy Gauge Colors (Mapped to the new Neon Dark Theme) -->
+    <color name="gaugeBackground1">@color/charcoal_surface</color>
+    <color name="gaugeBackground2">@color/charcoal_bg</color>
+    <color name="scaleColor">@color/text_muted</color>
+
+    <!-- Probes mapped to our neon palette -->
+    <color name="probe1">@color/neon_orange</color>
+    <color name="probe2">@color/neon_red</color>
+    <color name="probe3">@color/neon_blue</color>
+    <color name="setTemp">@color/neon_pink_target</color>
 </resources>
