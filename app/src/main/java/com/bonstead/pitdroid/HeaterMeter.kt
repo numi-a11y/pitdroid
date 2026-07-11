@@ -426,7 +426,7 @@ object HeaterMeter {
 
             mSamples.add(simpleSample)
         }
-// --- Tenderness Calculation Engine ---
+/// --- Tenderness Calculation Engine ---
         val currentTimeMillis = System.currentTimeMillis()
         val meatProbeIndex = 1 // Assuming Probe 1 is the primary meat probe. Change this if needed.
         val currentMeatTemp = sample.mProbes[meatProbeIndex]
@@ -437,7 +437,14 @@ object HeaterMeter {
 
             // To prevent massive jumps from network drops, we cap the time jump at 30 minutes
             if (timePassedMillis < (30 * 60 * 1000)) {
-                val addedPercentage = TendernessCalculator.calculateAddedPercentage(currentMeatTemp, timePassedMillis)
+
+                var mathTemp = currentMeatTemp
+                if (mathTemp in 1.0..110.0) {
+                    mathTemp = (mathTemp * 9.0 / 5.0) + 32.0
+                } // <-- Added the missing closing brace here
+
+                // Use 'mathTemp' here instead of 'currentMeatTemp'
+                val addedPercentage = TendernessCalculator.calculateAddedPercentage(mathTemp, timePassedMillis)
                 mAccumulatedTenderness += addedPercentage
 
                 // Prevent it from going over 100%

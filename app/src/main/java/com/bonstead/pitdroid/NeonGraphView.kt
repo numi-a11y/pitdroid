@@ -197,8 +197,15 @@ class NeonGraphView(context: Context, attrs: AttributeSet? = null) : View(contex
             // 4. Calculate & Plot Tenderness
             val dtMillis = (sample.mTime - lastSampleTime) * 1000L
             if (dtMillis > 0 && dtMillis < (30 * 60 * 1000)) {
+                val meatTemp = sample.mProbes[1]
                 if (!meatTemp.isNaN()) {
-                    currentTenderness += TendernessCalculator.calculateAddedPercentage(meatTemp, dtMillis)
+                    // Convert to Fahrenheit for the math engine
+                    var mathTemp = meatTemp
+                    if (mathTemp in 1.0..110.0) {
+                        mathTemp = (mathTemp * 9.0 / 5.0) + 32.0
+                    }
+
+                    currentTenderness += TendernessCalculator.calculateAddedPercentage(mathTemp, dtMillis)
                     if (currentTenderness > 100.0) currentTenderness = 100.0
                 }
             }
