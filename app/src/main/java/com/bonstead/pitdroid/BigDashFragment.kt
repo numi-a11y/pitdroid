@@ -1,5 +1,6 @@
 package com.bonstead.pitdroid
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -19,7 +20,6 @@ class BigDashFragment : Fragment(), HeaterMeter.Listener {
     private lateinit var tendernessProgress: ProgressBar
     private lateinit var tendernessVal: TextView
     private lateinit var holdingSwitch: SwitchCompat
-    private lateinit var resetCookButton: Button
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_big_dash, container, false)
@@ -29,7 +29,6 @@ class BigDashFragment : Fragment(), HeaterMeter.Listener {
         tendernessProgress = view.findViewById(R.id.tendernessProgress)
         tendernessVal = view.findViewById(R.id.tendernessVal)
         holdingSwitch = view.findViewById(R.id.holdingSwitch)
-        resetCookButton = view.findViewById(R.id.resetCookButton)
 
         // Initialize UI with current state
         holdingSwitch.isChecked = HeaterMeter.mIsHolding
@@ -41,12 +40,33 @@ class BigDashFragment : Fragment(), HeaterMeter.Listener {
             savePreferences()
         }
 
-        // Handle Reset Button click
-        resetCookButton.setOnClickListener {
+        // --- 1. RESET BUTTON LOGIC ---
+        val btnResetCook = view.findViewById<Button>(R.id.btnResetCook)
+        btnResetCook.setOnClickListener {
+            // Reset the RAM variable
             HeaterMeter.mAccumulatedTenderness = 0.0
             HeaterMeter.mLastTendernessUpdate = System.currentTimeMillis()
+
+            // Wipe the saved data from the phone's hard drive
+            val prefs = requireContext().getSharedPreferences("PitDroidData", Context.MODE_PRIVATE)
+            prefs.edit().putFloat("saved_tenderness", 0f).apply()
+
+            // Update the UI instantly using your helper function
             updateTendernessUI()
-            savePreferences()
+        }
+
+        // --- 2. RECALCULATE BUTTON LOGIC ---
+        val btnRecalculate = view.findViewById<Button>(R.id.btnRecalculate)
+        btnRecalculate.setOnClickListener {
+            // Run the history calculation
+            HeaterMeter.recalculateTenderness()
+
+            // Save the newly calculated data to the hard drive immediately
+            val prefs = requireContext().getSharedPreferences("PitDroidData", Context.MODE_PRIVATE)
+            prefs.edit().putFloat("saved_tenderness", HeaterMeter.mAccumulatedTenderness.toFloat()).apply()
+
+            // Update the UI instantly using your helper function
+            updateTendernessUI()
         }
 
         return view

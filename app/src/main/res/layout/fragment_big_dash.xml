@@ -134,22 +134,38 @@
             android:textStyle="bold"
             app:thumbTint="#FF9800"
             app:trackTint="#757575"
-            app:layout_constraintBottom_toTopOf="@id/resetCookButton"
+            app:layout_constraintBottom_toTopOf="@id/buttonContainer"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginBottom="24dp"/>
 
-    <Button
-            android:id="@+id/resetCookButton"
+    <LinearLayout
+            android:id="@+id/buttonContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Reset Cook"
-            android:textColor="#FFFFFF"
-            android:backgroundTint="#D32F2F"
-            android:textStyle="bold"
+            android:orientation="horizontal"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginBottom="24dp"/>
+            android:layout_marginBottom="32dp">
+
+        <Button
+                android:id="@+id/btnResetCook"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RESET COOK"
+                android:backgroundTint="@color/neon_red"
+                android:textColor="@color/text_light"
+                android:layout_marginEnd="16dp"/>
+
+        <Button
+                android:id="@+id/btnRecalculate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RECALCULATE"
+                android:backgroundTint="@color/neon_blue"
+                android:textColor="@color/text_light" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

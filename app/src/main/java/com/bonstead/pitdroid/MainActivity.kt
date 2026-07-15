@@ -5,6 +5,7 @@ import android.annotation.TargetApi
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -46,6 +47,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // LOAD the saved tenderness score (Renamed to dataPrefs to avoid conflicts)
+        val dataPrefs = getSharedPreferences("PitDroidData", Context.MODE_PRIVATE)
+        HeaterMeter.mAccumulatedTenderness = dataPrefs.getFloat("saved_tenderness", 0f).toDouble()
+
         // MODERNIZED: Ask for Android 13+ Notification Permissions right when the app opens
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -61,6 +66,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             openFragment(GaugeFragment())
         }
 
+        // Original settings prefs (kept as 'prefs' so the rest of the code works)
         val prefs = PreferenceManager.getDefaultSharedPreferences(baseContext)
         prefs.registerOnSharedPreferenceChangeListener(this)
 
@@ -107,6 +113,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             mUpdateTimer!!.cancel(false)
             mUpdateTimer = null
         }
+
+        // SAVE the exact tenderness score before Android puts the app to sleep
+        val dataPrefs = getSharedPreferences("PitDroidData", Context.MODE_PRIVATE)
+        dataPrefs.edit().putFloat("saved_tenderness", HeaterMeter.mAccumulatedTenderness.toFloat()).apply()
     }
 
     override fun onPostResume() {

@@ -710,4 +710,40 @@ object HeaterMeter {
             mLastStatusMessage = "Authentication failed"
         }
     }
+    fun recalculateTenderness() {
+        var currentTenderness = 0.0
+        if (mSamples.isEmpty()) return
+
+        var lastSampleTime = mSamples.first().mTime
+
+        for (sample in mSamples) {
+            val meatTemp = sample.mProbes[1] // Assuming Probe 1 is the primary meat probe
+            val pitSetPoint = sample.mSetPoint
+
+            val dtMillis = (sample.mTime - lastSampleTime) * 1000L
+
+            // Only count valid jumps under 30 minutes
+            if (dtMillis > 0 && dtMillis < (30 * 60 * 1000)) {
+                if (!meatTemp.isNaN()) {
+                    var mathTemp = meatTemp
+
+                    // Safe Celsius Check: If pit target is 150 or lower, it's Celsius
+                    if (!pitSetPoint.isNaN() && pitSetPoint <= 150.0) {
+                        mathTemp = (mathTemp * 9.0 / 5.0) + 32.0
+                    }
+
+                    currentTenderness += TendernessCalculator.calculateAddedPercentage(mathTemp, dtMillis)
+                    if (currentTenderness > 100.0) currentTenderness = 100.0
+                }
+            }
+            lastSampleTime = sample.mTime
+        }
+
+        // Apply the calculated total to the live dashboard
+        mAccumulatedTenderness = currentTenderness
+
+        // Reset the timer so the live engine picks up right where this left off
+        mLastTendernessUpdate = System.currentTimeMillis()
+    }
+
 }
